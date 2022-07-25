@@ -1,4 +1,4 @@
-module github.com/denis-ismailaj/coordinator
+module github.com/denis-ismailaj/derailleur
 
 go 1.18
 

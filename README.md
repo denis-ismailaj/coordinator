@@ -1,12 +1,12 @@
-# Coordinator
+# Derailleur
 
 ## Description
 
-Coordinator is a locking package that utilizes the local filesystem.
+Derailleur is a locking package that utilizes the local filesystem.
 
 ## How it works
 
-The main concept of Coordinator is a _wait file_. Each lock contender creates a wait file
+The main concept of Derailleur is a _wait file_. Each lock contender creates a wait file
 in order to get a place in line for the lock. The lock contender holds the lock when its
 wait file is the first in the sorted list of files in the specified directory. When other wait files
 exist before this lock contender, then it waits for the one directly preceding it to be removed.
@@ -18,13 +18,13 @@ This idea was inspired by the Zookeeper paper.
 
 ### Simple usage (no cutting in line)
 
-    // Create a coordinator instance
-	coordinator := coordination.Coordinator{
+    // Create a derailleur instance
+	derailleur := derailleur.Derailleur{
 		Dir: path.Join(os.TempDir(), "example"),
 	}
 
-	// Create a wait file for this operator
-	file, err := coordinator.CreateWaitFile()
+	// Create a wait file for this contender
+	file, err := derailleur.CreateWaitFile()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,17 +32,17 @@ This idea was inspired by the Zookeeper paper.
 	defer os.Remove(file.Name())
 
     // WaitInLine blocks until the lock contender is the first in line.
-    coordinator.WaitInLine(context.Background())
+    derailleur.WaitInLine(context.Background())
 
 ### Usage with cutting in line
 
-    // Create a coordinator instance
-	coordinator := coordination.Coordinator{
+    // Create a derailleur instance
+	derailleur := derailleur.Derailleur{
 		Dir: path.Join(os.TempDir(), "example"),
 	}
 
-	// Create a wait file for this operator
-	file, err := coordinator.CreateWaitFile()
+	// Create a wait file for this contender
+	file, err := derailleur.CreateWaitFile()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,7 +51,7 @@ This idea was inspired by the Zookeeper paper.
 
 	// Check if another contender has cut in line before us.
 	ownFileChan := make(chan error)
-	ownWatcher := coordinator.WaitForFile(coordinator.FilePath, ownFileChan)
+	ownWatcher := derailleur.WaitForFile(derailleur.FilePath, ownFileChan)
 	defer ownWatcher.Close()
 	go func() {
 		<-ownFileChan
@@ -60,11 +60,11 @@ This idea was inspired by the Zookeeper paper.
 
     // Choose to wait:
     //
-    // coordinator.WaitInLine(context.Background())
+    // derailleur.WaitInLine(context.Background())
     //
     // or to cut in line:
     //
-    // err := coordinator.CutInLine()
+    // err := derailleur.CutInLine()
     // if err != nil {
     //     log.Fatal(err)
     // }
@@ -72,7 +72,7 @@ This idea was inspired by the Zookeeper paper.
 
 ## Room for improvement
 
-Coordinator has a weak point of not being able to deal with contenders that aren't able to do
+Derailleur has a weak point of not being able to deal with contenders that aren't able to do
 cleanup (e.g. if they're `SIGKILL`-ed). This could be solved by having timeouts for wait files.
 The owner of a wait file could `touch` the file at a certain interval. If it failed to do that for some
 time, then the succeeding contender would be allowed to remove the stale wait file.

@@ -1,4 +1,4 @@
-package coordination
+package derailleur
 
 import (
 	"context"
@@ -14,20 +14,20 @@ import (
 	"time"
 )
 
-// Coordinator is a locking package that utilizes the local filesystem.
-// The main concept of Coordinator is a "wait file". Each lock contender creates a wait file
+// Derailleur is a locking package that utilizes the local filesystem.
+// The main concept of Derailleur is a "wait file". Each lock contender creates a wait file
 // in order to get a place in line for the lock. The lock contender holds the lock when its
 // wait file is the first in the sorted list of files in the Dir directory. When other wait files
 // exist before this lock contender, then it waits for the one directly preceding it to be removed.
 // By having contenders wait on only the contender before them, we avoid the thundering herd problem.
-type Coordinator struct {
+type Derailleur struct {
 	Dir      string
 	FilePath string
 }
 
 // WaitForFile watches the file at filePath and waits for it to be removed.
 // It writes nil to the channel when the file is removed or an error.
-func (co *Coordinator) WaitForFile(filePath string, channel chan error) *fsnotify.Watcher {
+func (co *Derailleur) WaitForFile(filePath string, channel chan error) *fsnotify.Watcher {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		channel <- err
@@ -72,7 +72,7 @@ func (co *Coordinator) WaitForFile(filePath string, channel chan error) *fsnotif
 
 // CreateWaitFile creates a file which is used by a lock contender to hold a place in line for the lock.
 // Each file name has a timestamp of when it was created and an additional random suffix to avoid races.
-func (co *Coordinator) CreateWaitFile() (*os.File, error) {
+func (co *Derailleur) CreateWaitFile() (*os.File, error) {
 	namePattern := fmt.Sprintf("queuer-%d-*", time.Now().UnixNano())
 	err := os.MkdirAll(co.Dir, os.ModePerm)
 	if err != nil {
@@ -89,7 +89,7 @@ func (co *Coordinator) CreateWaitFile() (*os.File, error) {
 }
 
 // WaitInLine blocks until the lock contender is the first in line.
-func (co *Coordinator) WaitInLine(ctx context.Context) {
+func (co *Derailleur) WaitInLine(ctx context.Context) {
 	for {
 		files, err := os.ReadDir(co.Dir)
 		if err != nil {
@@ -132,7 +132,7 @@ func (co *Coordinator) WaitInLine(ctx context.Context) {
 // CutInLine forcibly removes the current lock holder and preceding lock contenders
 // and makes the current contender acquire the lock.
 // Note that this does not affect contenders that succeed the current contender in the line.
-func (co *Coordinator) CutInLine() error {
+func (co *Derailleur) CutInLine() error {
 	files, err := os.ReadDir(co.Dir)
 	if err != nil {
 		return err

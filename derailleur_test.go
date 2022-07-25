@@ -1,4 +1,4 @@
-package coordination
+package derailleur
 
 import (
 	"context"
@@ -10,12 +10,12 @@ import (
 )
 
 func TestWaitForFile(t *testing.T) {
-	coordinator := Coordinator{}
+	derailleur := Derailleur{}
 
 	temp, _ := os.CreateTemp(os.TempDir(), "test-*")
 
 	fileChan := make(chan error)
-	watcher := coordinator.WaitForFile(temp.Name(), fileChan)
+	watcher := derailleur.WaitForFile(temp.Name(), fileChan)
 	defer watcher.Close()
 
 	deleted := false
@@ -43,11 +43,11 @@ func TestWaitInLine(t *testing.T) {
 	}
 	defer os.Remove(dir)
 
-	coordinator := Coordinator{
+	derailleur := Derailleur{
 		Dir: dir,
 	}
 
-	file, err := coordinator.CreateWaitFile()
+	file, err := derailleur.CreateWaitFile()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +59,7 @@ func TestWaitInLine(t *testing.T) {
 	done := make(chan struct{})
 
 	go func() {
-		coordinator.WaitInLine(context.Background())
+		derailleur.WaitInLine(context.Background())
 		done <- struct{}{}
 	}()
 
@@ -91,10 +91,10 @@ func TestWaitInLineMultiple(t *testing.T) {
 	done := make(chan string)
 
 	for i := 0; i < n; i++ {
-		coordinator := Coordinator{
+		derailleur := Derailleur{
 			Dir: dir,
 		}
-		file, err := coordinator.CreateWaitFile()
+		file, err := derailleur.CreateWaitFile()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -102,8 +102,8 @@ func TestWaitInLineMultiple(t *testing.T) {
 		defer os.Remove(file.Name())
 
 		go func() {
-			coordinator.WaitInLine(context.Background())
-			done <- coordinator.FilePath
+			derailleur.WaitInLine(context.Background())
+			done <- derailleur.FilePath
 		}()
 	}
 
@@ -155,11 +155,11 @@ func TestWaitInLineCancel(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	coordinator := Coordinator{
+	derailleur := Derailleur{
 		Dir: dir,
 	}
 
-	file, err := coordinator.CreateWaitFile()
+	file, err := derailleur.CreateWaitFile()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +173,7 @@ func TestWaitInLineCancel(t *testing.T) {
 	ctx, cancelFn := context.WithCancel(context.Background())
 
 	go func() {
-		coordinator.WaitInLine(ctx)
+		derailleur.WaitInLine(ctx)
 		done <- struct{}{}
 	}()
 
@@ -194,10 +194,10 @@ func TestCutInLine(t *testing.T) {
 
 	n := 10
 	for i := 0; i < n; i++ {
-		coordinator := Coordinator{
+		derailleur := Derailleur{
 			Dir: dir,
 		}
-		file, err := coordinator.CreateWaitFile()
+		file, err := derailleur.CreateWaitFile()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -205,7 +205,7 @@ func TestCutInLine(t *testing.T) {
 		defer os.Remove(file.Name())
 	}
 
-	cutter := Coordinator{
+	cutter := Derailleur{
 		Dir: dir,
 	}
 	file, err := cutter.CreateWaitFile()
